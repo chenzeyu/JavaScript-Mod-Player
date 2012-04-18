@@ -29,7 +29,7 @@
                 var reader = new FileReader();
                  reader.onload = function () {
 		 // Do something with ArrayBuffer object in reader.result
-		 Play(reader.result);
+		 sPlay(reader.result);
                  };
                 reader.readAsArrayBuffer(mod_file_tag.files[0]);
                 });
@@ -37,12 +37,16 @@
 		function Play(name){
 		Player(name);
 		}
+		function sPlay(name){
+		selectPlayer(name);
+		}
 		</script>
 		<ul>	
 		    <li><a style="color:#FFFFF1" href="javascript:Play('modfiles/barracuda.mod')">Barracuda</a></li><br \>
 			<li><a style="color:#FFFFF1" href="javascript:Play('modfiles/dont_cry.mod')">Don't Cry</a></li><br \>
+			<li><a style="color:#FFFFF1" href="javascript:Play('modfiles/welcome_.mod')">welcome</a></li><br \>
+			<li><a style="color:#FFFFF1" href="javascript:Play('modfiles/sundance_kid_-_euphoria.mod')">Sundance-kid-euphoria</a></li><br \>
 			<li><a style="color:#FFFFF1" href="javascript:Play('modfiles/das_bratwursterfest.mod')">das_bratwursterfest</a></li><br \>
-			<li><a style="color:#FFFFF1" href="javascript:Play('silent_night.mod')">Silent Night</a></li><br \>
 			<li><a style="color:#FFFFF1" href="javascript:Play('4.mod')">Sensuous Whisper</a></li>
 		</ul>
 		<br \><br \><br \><br \><br \><br \><br \><br \><br \><br \><br \><br \><br \><br \>
