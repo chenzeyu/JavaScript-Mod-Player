@@ -1,5 +1,5 @@
 var context = new webkitAudioContext();
-function ModReader(mod) {
+function ModReader(modArrayBuffer) {
  /* ModPeriodTable[ft][n] = the period to use for note number n at finetune value ft.
        Finetune values are in twos-complement, i.e. [0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1]
        The first table is used to generate a reverse lookup table, to find out the note number
@@ -97,28 +97,11 @@ function ModReader(mod) {
     this.samples = []; //31 samples
     this.audios = []; //31 samples' audiobuffer
 
-    /* load modfile by using XMLHttpRequest to an arraybuffer*/
-    function loadarraybuffer(url) {
-        var req = new XMLHttpRequest();
-        req.open("GET", url, false);
-        req.responseType = "arraybuffer";
-        req.onerror = function (e) {
-            console.error(e);
-        };
-        req.send();
-
-        return req.response;
-    }
-
-    //load modfile to m_buffer//
+    
+   //load modfile to m_buffer//
    // if(mod instanceof ArrayBuffer){
-   
-    if(typeof mod=="string"){
-    this.m_buffer = loadarraybuffer(mod);
-    }
-    else{
-	this.m_buffer = mod;
-    }
+	this.m_buffer = modArrayBuffer;
+    
 
     var viewData = new DataView(this.m_buffer);
     /* get the all the samples 
@@ -276,7 +259,7 @@ function schedSound(source, when_secs, pitch, tickspersample, volume, volumechan
     source.noteOn(when_secs);
 }
 
-function Player(name) {
+function selectPlayer(name) {
     //in PAL machines the clock rate is 7093789.2 Hz and for NTSC machines it is 7159090.5 Hz, hence tickspersample is PAL/44100=160.8569
     //or NTSC/44100 = 162/33765, here assuming it is a PAL machine.
     
@@ -289,7 +272,6 @@ function Player(name) {
 	sources[c]= context.createBufferSource();
     }
     
-    console.log("rinima");
     //time to keep track of how long the mod has been played.
     var m_time = context.currentTime;
     var currentChannels={};
@@ -312,7 +294,62 @@ function Player(name) {
 		}
 	    }
             
-        }
+        }    
     }
 }
+    /* load modfile by using XMLHttpRequest to an arraybuffer*/
+    function loadarraybuffer(url, cont) {
+	var req = new XMLHttpRequest();
+        req.open("GET", url, true);
+        req.responseType = "arraybuffer";
+        req.onerror = function (e) {
+        console.error(e);
+	};
+	req.onload = function (e) {
+        cont(req.response);
+	};
+	req.send();
+    }
+
+function Player(name) {
+    //in PAL machines the clock rate is 7093789.2 Hz and for NTSC machines it is 7159090.5 Hz, hence tickspersample is PAL/44100=160.8569
+    //or NTSC/44100 = 162/33765, here assuming it is a PAL machine.
+    loadarraybuffer(name, function (modArrayBuffer) {
+    var ticksperSample = 160.8569; //162.33765;
+    var modfile = new ModReader(modArrayBuffer);
+    //for Audio source to deal with the 4 channels to be played.
+    var sources={};
+    
+    for(var c=0; c< modfile.channelNum; c++){
+	sources[c]= context.createBufferSource();
+    }
+    
+    //time to keep track of how long the mod has been played.
+    var m_time = context.currentTime;
+    var currentChannels={};
+    for (var i = 0; i < modfile.OrderListLength; i++) {
+        //load one pattern
+        var currentPattern = modfile.Patterns[modfile.OrderList[i]];
+        for (var j = 0; j < 64; j++) {
+	    for( var k=0;k< modfile.channelNum; k++){
+		currentChannels[k]=currentPattern[j][k];
+	    
+	    //play one division in 0.12s, the default bpm is 125, 24 frames a beat, 6 frames a division, so a division plays 0.12s.
+	    //start with context.currentTime,initially m_time = currentTime, each pattern is played for 7.68s, hence the next pattern should be played
+	    //at m_time+i*7.68, i is the number of patterns played before.
+		if(currentChannels[k].sample!=0){
+		    if(j!=0){
+			sources[k].noteOff(m_time + i * 7.68 + j * 0.12);
+		    }
+		     sources[k] = context.createBufferSource();
+                schedSound(sources[k], m_time + i * 7.68 + j * 0.12, currentChannels[k].pitch, ticksperSample, currentChannels[k].volume, currentChannels[k].volumechange, currentChannels[k].sample - 1, modfile);
+		}
+	    }
+            
+        }    
+    }
+    });
+}
+
+
 
